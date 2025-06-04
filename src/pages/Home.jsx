@@ -1,29 +1,25 @@
 import { useState, useEffect } from 'react';
-import { Box, Button, Typography, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, TablePagination, Alert, CircularProgress, IconButton, TextField } from '@mui/material';
-import DeleteIcon from '@mui/icons-material/Delete';
+import { Box, Button, Typography, Alert, CircularProgress, ButtonGroup } from '@mui/material';
 import * as XLSX from 'xlsx';
 import { collection, addDoc, getDocs, deleteDoc, doc, query, updateDoc } from 'firebase/firestore';
 import { db } from '../services/firebase';
 import { useAuth } from '../services/auth';
-import FirstPageIcon from '@mui/icons-material/FirstPage';
-import LastPageIcon from '@mui/icons-material/LastPage';
+import ExpensesTable from '../components/expenses/ExepensesTable';
+import IncomesTable from '../components/Incomes/IncomesTable';
+import Stack from '@mui/material/Stack';
 
 
 function Home() {
     const { user } = useAuth();
     const [expenses, setExpenses] = useState([]);
     const [incomes, setIncomes] = useState([]);
-    const [page, setPage] = useState(0);
-    const [rowsPerPage, setRowsPerPage] = useState(10);
     const [success, setSuccess] = useState(false);
     const [isDeleteSuccess, setIsDeleteSuccess] = useState(false);
     const [error, setError] = useState(null);
     const [loadingData, setLoadingData] = useState(false);
     const [collectionName, setCollectionName] = useState('');
     const [collectionSize, setCollectionSize] = useState(0);
-    const [editingTypeId, setEditingTypeId] = useState(null);
-    const [editedTypeValue, setEditedTypeValue] = useState('');
-    const fetchExpenses = async () => {
+    const fetchData = async () => {
         // if (!user) return;
         setLoadingData(true);
         try {
@@ -32,6 +28,11 @@ function Home() {
             const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
             const sorted = data.sort((a, b) => new Date(b.date.seconds * 1000) - new Date(a.date.seconds * 1000));
             setExpenses(sorted);
+            const incomesQuery = query(collection(db, 'incomes'));
+            const incomesSnapshot = await getDocs(incomesQuery);
+            const incomesData = incomesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            const incomesDataSorted = incomesData.sort((a, b) => new Date(b.date.seconds * 1000) - new Date(a.date.seconds * 1000));
+            setIncomes(incomesDataSorted);
         } catch (err) {
             console.error('Erreur chargement des dépenses:', err);
         } finally {
@@ -39,8 +40,7 @@ function Home() {
         }
     };
     useEffect(() => {
-
-        fetchExpenses();
+        fetchData();
     }, [user]);
 
     useEffect(() => {
@@ -98,7 +98,8 @@ function Home() {
                 console.log("Données enrichies :", enrichedRows);
 
                 for (const item of enrichedRows) {
-                    await addDoc(collection(db, 'expenses'), item);
+                    const targetCollection = item.type === 'Revenus du travail' ? 'incomes' : 'expenses';
+                    await addDoc(collection(db, targetCollection), item);
                 }
 
                 setExpenses(enrichedRows);
@@ -110,24 +111,11 @@ function Home() {
                 setSuccess(false);
             } finally {
                 setLoadingData(false);
+                fetchData();
             }
         };
         reader.readAsArrayBuffer(file);
-        fetchExpenses();
-    };
 
-    const handleChangePage = (event, newPage) => {
-        setPage(newPage);
-    };
-
-    const handleChangeRowsPerPage = (event) => {
-        setRowsPerPage(parseInt(event.target.value, 10));
-        setPage(0);
-    };
-
-    const handleDelete = async (id) => {
-        await deleteDoc(doc(db, 'expenses', id));
-        setExpenses((prev) => prev.filter((row) => row.id !== id));
     };
 
     const purgeCollection = async (collectionName) => {
@@ -138,122 +126,57 @@ function Home() {
             const deletions = snapshot.docs.map((d) => deleteDoc(doc(db, collectionName, d.id)));
             setCollectionSize(snapshot.size);
             await Promise.all(deletions);
-            setIsDeleteSuccess(true);
         } catch (err) {
             setError(`Erreur lors de la purge de "${collectionName}".`, err);
         } finally {
-            setExpenses([]);
+            if (collectionName === 'expenses') {
+               setExpenses([]);
+            } else if (collectionName === 'incomes') {
+                setIncomes([]);
+            }
+            setIsDeleteSuccess(true);
             setLoadingData(false);
         }
     };
 
-    const formatDate = (date) => {
-        if (!date) return 'Invalid Date';
-        if (typeof date === 'string' || typeof date === 'number') {
-            return new Date(date).toLocaleDateString();
-        }
-        if (date.seconds) {
-            return new Date(date.seconds * 1000).toLocaleDateString();
-        }
-        return 'Invalid Date';
-    };
-    const handleTypeEdit = (id, currentValue) => {
-        setEditingTypeId(id);
-        setEditedTypeValue(currentValue);
-    };
-
-    const handleTypeChange = (e) => {
-        setEditedTypeValue(e.target.value);
-    };
-
-    const handleTypeSave = async (id) => {
-        const expenseRef = doc(db, 'expenses', id);
-        await updateDoc(expenseRef, { type: editedTypeValue });
-        setExpenses((prev) => prev.map((item) => item.id === id ? { ...item, type: editedTypeValue } : item));
-        setEditingTypeId(null);
-    };
 
     return (
         <>
-            <Box mt={4}>
-                <Typography variant="h5" gutterBottom>Accueil</Typography>
-                <Button variant="contained" component="label">
-                    Importer fichier CSV/Excel
-                    <input type="file" hidden accept=".csv,.xlsx,.xls" onChange={handleFileUpload} />
-                </Button>
-                {success && <Alert severity="success" sx={{ mt: 2 }}>Données importées et enregistrées avec succès</Alert>}
-                {error && <Alert severity="error" sx={{ mt: 2 }}>{error}</Alert>}
-                {isDeleteSuccess && <Alert severity="success" sx={{ mt: 2 }}>✅ Collection "{collectionName}" purgée ({collectionSize} documents supprimés).</Alert>}
+            <Box mt={4} mb={4}>
+                
+                <ButtonGroup variant="contained" aria-label="Basic button group">
+                    <Stack spacing={2} direction="row">
+                    <Button variant="contained" component="label" >
+                        Upload data (expenses and incomes)
+                        <input type="file" hidden accept=".csv,.xlsx,.xls" onChange={handleFileUpload} />
+                    </Button>
+                    <Button
+                        variant="outlined" color="error"
+                        onClick={async () => {
+                            purgeCollection('expenses');
+                            purgeCollection('incomes');
+                        }}
+                    >
+                        Purge data (expenses and incomes)
+                    </Button>
+                    </Stack>
+                </ButtonGroup>
+                
+                {success &&
+                    <Alert severity="success" sx={{ mt: 2 }}>Données importées et enregistrées avec succès</Alert>
+                }
+                {error &&
+                    <Alert severity="error" sx={{ mt: 2 }}>{error}</Alert>
+                }
+                {isDeleteSuccess &&
+                    <Alert severity="success" sx={{ mt: 2 }}>✅ Collection "{collectionName}" purgée ({collectionSize} documents supprimés).</Alert>
+                }
                 {loadingData ? (
                     <Box display="flex" justifyContent="center" mt={4}><CircularProgress /></Box>
-                ) : <TableContainer component={Paper} sx={{ mt: 2 }}>
-                    <Table>
-                        <TableHead>
-                            <TableRow>
-                                <TableCell>Date</TableCell>
-                                <TableCell>Type</TableCell>
-                                <TableCell>Amount</TableCell>
-                                <TableCell>Action</TableCell>
-                            </TableRow>
-                        </TableHead>
-                        <TableBody>
-                            {expenses.length > 0 ? (
-                                expenses.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage).map((expense) => (
-                                    <TableRow key={expense.id}>
-                                        <TableCell>{formatDate(expense.date)}</TableCell>
-                                        <TableCell>
-                                            {editingTypeId === expense.id ? (
-                                                <TextField
-                                                    value={editedTypeValue}
-                                                    onChange={handleTypeChange}
-                                                    onBlur={() => handleTypeSave(expense.id)}
-                                                    size="small"
-                                                    autoFocus
-                                                />
-                                            ) : (
-                                                <span onClick={() => handleTypeEdit(expense.id, expense.type)} style={{ cursor: 'pointer' }}>{expense.type}</span>
-                                            )}
-                                        </TableCell>
-                                        <TableCell>{expense.amount}</TableCell>
-                                        <TableCell>
-                                            <IconButton color="error" onClick={() => handleDelete(expense.id)}>
-                                                <DeleteIcon />
-                                            </IconButton>
-                                        </TableCell>
-                                    </TableRow>
-                                ))
-                            ) : (
-                                <TableRow>
-                                    <TableCell colSpan={4} align="center">No data</TableCell>
-                                </TableRow>
-                            )}
-                        </TableBody>
-                    </Table>
-                    <TablePagination
-                        rowsPerPageOptions={[5, 10, 25]}
-                        component="div"
-                        count={expenses.length}
-                        rowsPerPage={rowsPerPage}
-                        page={page}
-                        onPageChange={handleChangePage}
-                        onRowsPerPageChange={handleChangeRowsPerPage}
-                        labelDisplayedRows={({ page }) => `Page ${page + 1}`}
-                    />
-                    <IconButton onClick={() => setPage(0)} disabled={page === 0}><FirstPageIcon /></IconButton>
-                    <IconButton onClick={() => setPage(Math.max(0, Math.ceil(expenses.length / rowsPerPage) - 1))} disabled={page >= Math.ceil(expenses.length / rowsPerPage) - 1}><LastPageIcon /></IconButton>
-                </TableContainer>
+                ) : <><ExpensesTable expenses={expenses} setExpenses={setExpenses} />
+                    <IncomesTable incomes={incomes} setIncomes={setIncomes} /></>
                 }
 
-            </Box>
-            <Box mt={4}>
-                <Button
-                    variant="outlined" color="error"
-                    onClick={() => {
-                        purgeCollection('expenses');
-                    }}
-                >
-                    Purge data
-                </Button>
             </Box>
         </>
     );

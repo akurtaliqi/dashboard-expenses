@@ -6,6 +6,7 @@ import LoginForm from './components/auth/LoginForm';
 import NavBar from './components/layout/NavBar';
 import ProtectedRoute from './components/layout/ProtectedRoute';
 import Home from './pages/Home';
+import Dashboard from './pages/Dashboard';
 import AddExpense from './pages/AddExpense';
 import { AuthProvider } from './services/auth';
 
@@ -39,6 +40,14 @@ function App() {
                 element={
                   <ProtectedRoute requiredRole="admin">
                     <AddExpense />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/dashboard"
+                element={
+                  <ProtectedRoute requiredRole="admin">
+                    <Dashboard />
                   </ProtectedRoute>
                 }
               />

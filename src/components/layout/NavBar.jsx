@@ -61,6 +61,7 @@ function NavBar({ toggleTheme, mode }) {
               <>
                 <Button color="inherit" component={Link} to="/">Home</Button>
                 {role === 'admin' && <Button color="inherit" component={Link} to="/add-expense">Add Expense</Button>}
+                <Button color="inherit" component={Link} to="/dashboard">Dashboard</Button>
               </>
             )}
             {!user && <Button color="inherit" component={Link} to="/login">Login</Button>}
