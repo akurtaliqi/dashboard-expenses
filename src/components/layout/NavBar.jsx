@@ -31,12 +31,14 @@ function NavBar({ toggleTheme, mode }) {
         </Box>
       )}
       <List>
-        <ListItem button component={Link} to="/">
-          <ListItemText primary="Home" />
-        </ListItem>
         {role === 'admin' && (
-          <ListItem button component={Link} to="/add-expense">
-            <ListItemText primary="Add Expense" />
+          <ListItem button component={Link} to="/">
+            <ListItemText primary="Dashboard" />
+          </ListItem>
+        )}
+                {role === 'admin' && (
+          <ListItem button component={Link} to="/transactions">
+            <ListItemText primary="Transactions" />
           </ListItem>
         )}
         <ListItem button onClick={handleLogout}>
@@ -60,8 +62,7 @@ function NavBar({ toggleTheme, mode }) {
             {user && (
               <>
                 <Button color="inherit" component={Link} to="/">Home</Button>
-                {role === 'admin' && <Button color="inherit" component={Link} to="/add-expense">Add Expense</Button>}
-                <Button color="inherit" component={Link} to="/dashboard">Dashboard</Button>
+                {role === 'admin' && <Button color="inherit" component={Link} to="/transactions">Transactions</Button>}
               </>
             )}
             {!user && <Button color="inherit" component={Link} to="/login">Login</Button>}

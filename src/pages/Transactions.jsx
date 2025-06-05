@@ -7,9 +7,9 @@ import { useAuth } from '../services/auth';
 import ExpensesTable from '../components/expenses/ExepensesTable';
 import IncomesTable from '../components/Incomes/IncomesTable';
 import Stack from '@mui/material/Stack';
+import AddExpenseModal from '../components/modal/AddExpenseModal';
 
-
-function Home() {
+function Transactions() {
     const { user } = useAuth();
     const [expenses, setExpenses] = useState([]);
     const [incomes, setIncomes] = useState([]);
@@ -131,7 +131,7 @@ function Home() {
             setError(`Erreur lors de la purge de "${collectionName}".`, err);
         } finally {
             if (collectionName === 'expenses') {
-               setExpenses([]);
+                setExpenses([]);
             } else if (collectionName === 'incomes') {
                 setIncomes([]);
             }
@@ -140,29 +140,29 @@ function Home() {
         }
     };
 
-
+    const [openModal, setOpenModal] = useState(false);
     return (
         <>
             <Box mt={4} mb={4}>
-                
+
                 <ButtonGroup variant="contained" aria-label="Basic button group">
                     <Stack spacing={2} direction="row">
-                    <Button variant="contained" component="label" >
-                        Upload data (expenses and incomes)
-                        <input type="file" hidden accept=".csv,.xlsx,.xls" onChange={handleFileUpload} />
-                    </Button>
-                    <Button
-                        variant="outlined" color="error"
-                        onClick={async () => {
-                            purgeCollection('expenses');
-                            purgeCollection('incomes');
-                        }}
-                    >
-                        Purge data (expenses and incomes)
-                    </Button>
+                        <Button variant="contained" component="label" >
+                            Upload data (expenses and incomes)
+                            <input type="file" hidden accept=".csv,.xlsx,.xls" onChange={handleFileUpload} />
+                        </Button>
+                        <Button
+                            variant="outlined" color="error"
+                            onClick={async () => {
+                                purgeCollection('expenses');
+                                purgeCollection('incomes');
+                            }}
+                        >
+                            Purge data (expenses and incomes)
+                        </Button>
                     </Stack>
                 </ButtonGroup>
-                
+
                 {success &&
                     <Alert severity="success" sx={{ mt: 2 }}>Données importées et enregistrées avec succès</Alert>
                 }
@@ -172,6 +172,12 @@ function Home() {
                 {isDeleteSuccess &&
                     <Alert severity="success" sx={{ mt: 2 }}>✅ Collection "{collectionName}" purgée ({collectionSize} documents supprimés).</Alert>
                 }
+
+
+                <Box mt={4} display="flex" justifyContent="space-between" alignItems="center">
+                    <Typography variant="h4" gutterBottom>Expenses</Typography>
+                    <Button variant="contained" onClick={() => setOpenModal(true)}>Add Expense</Button>
+                </Box>
                 {loadingData ? (
                     <Box display="flex" justifyContent="center" mt={4}><CircularProgress /></Box>
                 ) : <><ExpensesTable expenses={expenses} setExpenses={setExpenses} />
@@ -179,8 +185,16 @@ function Home() {
                 }
 
             </Box>
+             <AddExpenseModal
+                open={openModal}
+                onClose={() => setOpenModal(false)}
+                onSuccess={() => {
+                    fetchData();
+                    setOpenModal(false);
+                }}
+            />
         </>
     );
 }
 
-export default Home;
+export default Transactions;

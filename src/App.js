@@ -5,9 +5,8 @@ import { useMemo, useState } from 'react';
 import LoginForm from './components/auth/LoginForm';
 import NavBar from './components/layout/NavBar';
 import ProtectedRoute from './components/layout/ProtectedRoute';
-import Home from './pages/Home';
+import Transactions from './pages/Transactions';
 import Dashboard from './pages/Dashboard';
-import AddExpense from './pages/AddExpense';
 import { AuthProvider } from './services/auth';
 
 function App() {
@@ -31,23 +30,15 @@ function App() {
                 path="/"
                 element={
                   <ProtectedRoute requiredRole="admin">
-                    <Home />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/add-expense"
-                element={
-                  <ProtectedRoute requiredRole="admin">
-                    <AddExpense />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/dashboard"
-                element={
-                  <ProtectedRoute requiredRole="admin">
                     <Dashboard />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/transactions"
+                element={
+                  <ProtectedRoute requiredRole="admin">
+                    <Transactions />
                   </ProtectedRoute>
                 }
               />

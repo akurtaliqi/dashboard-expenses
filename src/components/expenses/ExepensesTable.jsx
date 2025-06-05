@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Box, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, TablePagination, IconButton, TextField, Typography } from '@mui/material';
+import { Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, TablePagination, IconButton, TextField } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
 import FirstPageIcon from '@mui/icons-material/FirstPage';
 import LastPageIcon from '@mui/icons-material/LastPage';
@@ -48,9 +48,6 @@ function ExpensesTable({ expenses, setExpenses }) {
 
   return (
     <>
-      <Box mt={4}>
-        <Typography variant="h4" gutterBottom>Expenses</Typography>
-      </Box>
       <TableContainer component={Paper} sx={{ mt: 2 }}>
         <Table>
           <TableHead>
