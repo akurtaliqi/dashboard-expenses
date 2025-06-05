@@ -19,6 +19,7 @@ function Home() {
     const [loadingData, setLoadingData] = useState(false);
     const [collectionName, setCollectionName] = useState('');
     const [collectionSize, setCollectionSize] = useState(0);
+    // TODO : clean spaces before / after the type and subType values
     const fetchData = async () => {
         // if (!user) return;
         setLoadingData(true);
